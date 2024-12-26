@@ -19,7 +19,7 @@ echo <<<HTML
 		<link rel="icon" type="image/svg+xml" href="{$GLOBALS['constants']['APP_ROOT']}assets/favicon.svg">
 		<link rel="preload" as="style" href="{$GLOBALS['constants']['APP_ROOT']}css/styles.css?v={$versionedFiles[__DIR__ . '/../css/styles.css']['version']}" integrity="{$versionedFiles[__DIR__ . '/../css/styles.css']['integrity']}">
 		<link rel="stylesheet" href="{$GLOBALS['constants']['APP_ROOT']}css/styles.css?v={$versionedFiles[__DIR__ . '/../css/styles.css']['version']}" integrity="{$versionedFiles[__DIR__ . '/../css/styles.css']['integrity']}">
-		<script src="{$GLOBALS['constants']['APP_ROOT']}js/scripts.js.js?v={$versionedFiles[__DIR__ . '/../js/scripts.js']['version']}" type="module" integrity="{$versionedFiles[__DIR__ . '/../js/scripts.js']['integrity']}"></script>
+		<script src="{$GLOBALS['constants']['APP_ROOT']}js/scripts.js?v={$versionedFiles[__DIR__ . '/../js/scripts.js']['version']}" type="module" integrity="{$versionedFiles[__DIR__ . '/../js/scripts.js']['integrity']}"></script>
 		<script src="{$GLOBALS['constants']['APP_ROOT']}vendor/htmx/htmx.min.js?v={$versionedFiles[__DIR__ . '/../vendor/htmx/htmx.min.js']['version']}" integrity="{$versionedFiles[__DIR__ . '/../vendor/htmx/htmx.min.js']['integrity']}"></script>
 	</head>
 
