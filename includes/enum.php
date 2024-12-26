@@ -1,8 +1,8 @@
 <?php
 
-enum DatabaseType
+enum DatabaseType: string
 {
-	case mariadb;
+	case mariadb = 'mariadb';
 
 	function displayName(): string
 	{
