@@ -2,38 +2,36 @@
 require_once(__DIR__ . '/includes/loader.php');
 require_once(__DIR__ . '/templates/header.php');
 
-$backupDirectories = getDatabaseBackupDirectories();
-
-$tableData = '';
-foreach ($backupDirectories as $databaseName => $directoryInfo)
+$databases = DBDatabase::getAllDatabases();
+if ($databases === false)
 {
-	if (isset(BACKUP_DATABASES[$databaseName]))
-	{
-		//Not displaying if the database isn't visible.
-		if (BACKUP_DATABASES[$databaseName]->visitbility === false)
-			continue;
-		$databaseTypeText = BACKUP_DATABASES[$databaseName]->databaseType->displayName();
-		$databaseActiveText = (BACKUP_DATABASES[$databaseName]->active === true ? 'Active' : 'Inactive');
-	}
-	else
-	{
-		$databaseTypeText = 'N/A';
-		$databaseActiveText = 'Not Configured';
-	}
-	$tableData .= <<<HTML
+	trigger_error('Failed to get databases.', E_USER_ERROR);
+	exit(1);
+}
+
+$tableBody = '';
+$databaseCount = 0;
+foreach ($databases as $database)
+{
+	//Not displaying if the database isn't visible.
+	if ($database->visible === false)
+		continue;
+	++$databaseCount;
+
+	$databaseTypeText = $database->connection->type->displayName();
+	$databaseActiveText = ($database->active === true ? 'Active' : 'Inactive');
+	$tableBody .= <<<HTML
 		<tr>
-			<td>{$databaseName}</td>
+			<td>{$database->name}</td>
 			<td>{$databaseTypeText}</td>
 			<td>{$databaseActiveText}</td>
-			<td>{$directoryInfo['modification_time']->format(DATETIME_FORMAT)}</td>
-			<td>{$directoryInfo['change_time']->format(DATETIME_FORMAT)}</td>
-			<!-- <td>{$directoryInfo['access_time']->format(DATETIME_FORMAT)}</td> -->
-			<td><a href="list.php?database-name={$databaseName}">View</a></td>
+			<td>{$database->maxBackupCount}</td>
+			<td><a href="list.php?uuid={$database->uuid}">View</a></td>
 		</tr>
 		HTML;
 }
 
-$databaseCount = DATABASE_METADATA->activeCount;
+$databaseCount = count($databases);
 echo <<<HTML
 	<main>
 		<h2>Databases ({$databaseCount})</h2>
@@ -41,16 +39,14 @@ echo <<<HTML
 			<thead>
 				<tr>
 					<th>Database</th>
-					<th>Database Type</th>
+					<th>Connection Type</th>
 					<th>Status</th>
-					<th>Modification Time</th>
-					<th>Change Time</th>
-					<!-- <th>Access Time</th> -->
+					<th>Max Backup Count</th>
 					<th>Actions</th>
 				</tr>
 			</thead>
 			<tbody>
-				{$tableData}
+				{$tableBody}
 			</tbody>
 		</table>
 	</main>

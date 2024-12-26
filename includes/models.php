@@ -78,7 +78,7 @@ class DatabaseConnector
 		return $this->connection;
 	}
 
-	public function executeStatement($query = '', $params = [], $skipPrepare = false)
+	public function executeStatement($query = '', $params = [], $skipPrepare = false): \PDOStatement|int|false
 	{
 		try
 		{
@@ -247,69 +247,49 @@ class DatabaseConnector
 	}
 }
 
-class TrackingDB extends DatabaseConnector
+class DBConnector extends DatabaseConnector
 {
 	public function init()
 	{
+		DBDatabase::init();
+
+		//Creating `excluded_tables` reference table.
 		$this->executeStatement(
-			'CREATE TABLE IF NOT EXISTS backups (
+			'CREATE TABLE IF NOT EXISTS excluded_tables (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				database_name TEXT,
-				last_ran DATETIME,
-				raw_size INTEGER,
-				archive_size INTEGER
+				database_id INTEGER,
+				table_name TEXT,
+				FOREIGN KEY(database_id) REFERENCES DATABASE(id) ON UPDATE CASCADE ON DELETE CASCADE
 			);'
 		);
+		//Creating `database_metadata` table.
+		//Stores additional information on a database.
+		$this->executeStatement(
+			'CREATE TABLE IF NOT EXISTS database_metadata (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				database_id INTEGER,
+				first_run_time TEXT,
+				last_run_time TEXT,
+				total_run_count INTEGER NOT NULL DEFAULT 0,
+				FOREIGN KEY(database_id) REFERENCES DATABASE(id) ON UPDATE CASCADE ON DELETE CASCADE
+			);'
+		);
+		// //Creating `` reference table.
+		// $this->executeStatement(
+		// 	'CREATE TABLE IF NOT EXISTS database_connector (
+		// 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		// 		database_name TEXT,
+		// 		last_ran DATETIME,
+		// 		raw_size INTEGER,
+		// 		archive_size INTEGER
+		// 	);'
+		// );
 		return true;
 	}
 
 	public function insertEntry(int $userAgentID, int $employeeID, string $action)
 	{
 		$this->executeStatement('INSERT INTO log (user_agent_id, employee_id, action) VALUES (?, ?, ?)', [$userAgentID, $employeeID, $action]);
-		return true;
-	}
-}
-
-class DBBConnector extends DatabaseConnector
-{
-	public function dumpDatabase(string $databaseName, array $excludedTables = []): bool
-	{
-		$outputFolderPath = BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $databaseName;
-		if (checkForFolder($outputFolderPath) === false)
-			return false;
-
-		$outputFullPath = $outputFolderPath . DIRECTORY_SEPARATOR . $databaseName . '_' . date(BACKUP_DATE_FORMAT) . '.sql';
-		if (count($excludedTables) > 0)
-		{
-			$excludedTablesFlags = '';
-			foreach ($excludedTables as $excludedTable)
-			{
-				$excludedTablesFlags .= '--ignore-table="' . $databaseName . '.' . $excludedTable . '" ';
-			}
-		}
-		else
-			$excludedTablesFlags = '';
-		$command = '"' . BACKUP_EXECUTABLE . '" --host="' . DB_HOST . '" --user="' . DB_USERNAME . '" --password="' . DB_PASSWORD . '" --compact --complete-insert --compress --dump-date --extended-insert --lock-tables=false --single-transaction --skip-comments --quick --events --triggers --routines ' . $excludedTablesFlags . ' --databases "' . $databaseName . '" > "' . $outputFullPath . '"';
-
-		echo 'BACKUP: Start - ' . $databaseName . PHP_EOL;
-		$output = runCommand($command);
-		echo 'BACKUP: Complete - ' . $databaseName . PHP_EOL;
-		var_dump($output);
-		return true;
-	}
-
-	public function runBackup(): bool
-	{
-		$timer = new ScopeTimer('Backup');
-		/** @var DatabaseConfig $databaseConfig */
-		foreach (BACKUP_DATABASES as $databaseConfig)
-		{
-			if ($databaseConfig->active === false)
-				continue;
-			elseif ($databaseConfig->maxBackupCount <= 0) //No use running the backup if it will be deleted after.
-				continue;
-			$this->dumpDatabase($databaseConfig->name, $databaseConfig->excludedTables);
-		}
 		return true;
 	}
 }
@@ -348,30 +328,330 @@ class ScopeTimer
 	//$timer = new ScopeTimer(__FILE__);
 }
 
-class DatabaseConfig
+class DBDatabase
 {
-	public string $name;
-	public DatabaseType $databaseType;
+	public ?int $id;
+	public ?string $uuid;
+	public string $name = '';
+	public ?DatabaseType $type;
+	public ?DBConnectionConfig $connection;
 	public bool $active = true;
-	public bool $visitbility = true;
-	public ?int $maxBackupCount = 14;
-	public array $excludedTables = [];
+	public bool $visible = true;
+	public DateTime $lastModified;
+	public int $maxBackupCount = 14;
+	/** @var array<String> */
+	public ?array $excludedTables = null;
 
-	public function __construct(
-		string $name,
-		DatabaseType $databaseType,
-		bool $active = true,
-		bool $visitbility = true,
-		?int $maxBackupCount = 14,
-		array $excludedTables = []
-	)
+	public static function init(): \PDOStatement|int|false
 	{
-		$this->name = $name;
-		$this->databaseType = $databaseType;
-		$this->active = $active;
-		$this->visitbility = $visitbility;
-		$this->maxBackupCount = $maxBackupCount;
-		$this->excludedTables = $excludedTables;
+		//Creating `database` table.
+		//Stores information about each database.
+		return $GLOBALS['DB']->executeStatement(
+			'CREATE TABLE IF NOT EXISTS database (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				uuid TEXT NOT NULL,
+				name TEXT NOT NULL,
+				connection TEXT NOT NULL,
+				active INTEGER NOT NULL DEFAULT 1,
+				visible INTEGER NOT NULL DEFAULT 1,
+				last_modified TEXT DEFAULT CURRENT_TIMESTAMP,
+				max_backup_count INTEGER NOT NULL
+			);'
+		);
+	}
+
+	public function insertUpdateDatabase(): \PDOStatement|int|false
+	{
+		return $GLOBALS['DB']->executeStatement(
+			'INSERT
+				OR REPLACE INTO database (
+					id,
+					uuid,
+					name,
+					connection,
+					active,
+					visible,
+					max_backup_count
+				)
+			VALUES
+				(?, ?, ?, ?, ?, ?, ?);',
+			[
+				$this->id,
+				($this->uuid !== null ? $this->uuid : uuidv4()),
+				$this->name,
+				$this->connection->nameID,
+				intval($this->active),
+				intval($this->visible),
+				$this->maxBackupCount
+			]
+		);
+		return true;
+	}
+
+	public function __construct(array $row = [])
+	{
+		if (count($row) === 0)
+			return;
+
+		$this->importRow($row);
+	}
+
+	private function importRow(array $row): void
+	{
+		if (isset($row['id']))
+			$this->id = intval($row['id']);
+
+		if (isset($row['uuid']))
+			$this->uuid = $row['uuid'];
+
+		if (isset($row['name']))
+			$this->name = $row['name']; //*****
+
+		if (isset($row['type']))
+			$this->type = DatabaseType::tryFrom($row['type']);
+
+		if (isset($row['connection']))
+			$this->connection = DBConnectionConfig::getConfig($row['connection']);
+
+		if (isset($row['active']))
+			$this->active = boolval($row['active']);
+
+		if (isset($row['visible']))
+			$this->visible = boolval($row['visible']);
+
+		if (isset($row['last_modified']))
+			$this->lastModified = DateTime::createFromFormat(DB_DATETIME_FORMAT, $row['last_modified']);
+
+		if (isset($row['max_backup_count']))
+			$this->maxBackupCount = intval($row['max_backup_count']);
+	}
+
+	public static function importInputs(array $inputs): DBDatabase
+	{
+		$database = new DBDatabase;
+
+		if (isset($inputs['id']))
+			$database->id = (intval($inputs['id']) !== 0 ? intval($inputs['id']) : null);
+
+		if (isset($inputs['uuid']))
+			$database->uuid = ($inputs['uuid'] !== '' ? $inputs['uuid'] : null); //*****
+
+		if (isset($inputs['name']))
+			$database->name = $inputs['name']; //*****
+
+		if (isset($inputs['type']))
+			$database->type = DatabaseType::tryFrom($inputs['type']);
+
+		if (isset($inputs['connection']))
+			$database->connection = DBConnectionConfig::getConfig($inputs['connection']);
+
+		if (isset($inputs['active']))
+			$database->active = true;
+		else
+			$database->active = false;
+
+		if (isset($inputs['visible']))
+			$database->visible = true;
+		else
+			$database->visible = false;
+
+		if (isset($inputs['max_backup_count']))
+			$database->maxBackupCount = intval($inputs['max_backup_count']);
+
+		return $database;
+	}
+
+	/**
+	 * Undocumented function
+	 *
+	 * @return array<DBDatabase>|false
+	 */
+	public static function getAllDatabases(?bool $activeStatus = null): array | false
+	{
+		$params = [];
+		$activeSQL = '';
+		if ($activeStatus !== null)
+		{
+			$activeSQL = ' WHERE active = ?';
+			$params[] = intval($activeStatus);
+		}
+		$results = $GLOBALS['DB']->select(
+			'SELECT
+				*
+			FROM
+				database' . $activeSQL,
+			$params
+		);
+
+		if ($results !== false)
+		{
+			$databases = [];
+			foreach ($results as $row)
+			{
+				$databases[] = new DBDatabase($row);
+			}
+			return $databases;
+		}
+		else
+			return false;
+	}
+	/**
+	 * Undocumented function
+	 *
+	 * @return DBDatabase|false
+	 */
+	public static function lookupDatabase(int $databaseID): DBDatabase | false
+	{
+		$results = $GLOBALS['DB']->select(
+			'SELECT
+				*
+			FROM
+				database
+			WHERE
+				id = ?',
+			[$databaseID]
+		);
+
+		if ($results !== false && count($results) === 1)
+			return new DBDatabase($results[0]);
+		else
+			return false;
+	}
+
+	public function runBackup(): bool
+	{
+		if ($this->active === false)
+			return false;
+		elseif ($this->maxBackupCount === null || $this->maxBackupCount < 0) //No use running the backup if it will be deleted after.
+			return false;
+
+		if ($this->excludedTables === null)
+			$this->excludedTables = DBDatabase::lookupExcludedTables($this->id);
+
+		var_dump($this);
+		exit(0);
+
+		//If the type is mariaDB, make use of mariadb-dump.
+		if ($this->connection->type === DatabaseType::mariadb)
+			$this->mariadbDumpDatabase($this->name, $this->excludedTables);
+		else
+		{
+			$connection = $this->connection->getConnection();
+		}
+		return true;
+	}
+
+	public function mariadbDumpDatabase(): bool
+	{
+		$outputFolderPath = BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $this->uuid;
+		if (checkForFolder($outputFolderPath) === false)
+			return false;
+
+		$outputFullPath = $outputFolderPath . DIRECTORY_SEPARATOR . $this->name . '_' . date(BACKUP_DATE_FORMAT) . '.sql';
+		if (count($this->excludedTables) > 0)
+		{
+			$excludedTablesFlags = '';
+			foreach ($this->excludedTables as $excludedTable)
+			{
+				$excludedTablesFlags .= '--ignore-table="' . $this->name . '.' . $excludedTable . '" ';
+			}
+		}
+		else
+			$excludedTablesFlags = '';
+		$command = '"' . BACKUP_EXECUTABLE . '" --host="' . $this->connection->hostPath . '" --user="' . $this->connection->user . '" --password="' . $this->connection->pass . '" --compact --complete-insert --compress --dump-date --extended-insert --lock-tables=false --single-transaction --skip-comments --quick --events --triggers --routines ' . $excludedTablesFlags . ' --databases "' . $this->name . '" > "' . $outputFullPath . '"';
+
+		echo 'BACKUP: Start - ' . $this->name . PHP_EOL;
+		$output = runCommand($command);
+		echo 'BACKUP: Complete - ' . $this->name . PHP_EOL;
+		var_dump($output);
+		return true;
+	}
+
+	/**
+	 * Undocumented function
+	 *
+	 * @param integer $databaseID
+	 * @return array<String>|false
+	 */
+	public static function lookupExcludedTables(int $databaseID): array | false
+	{
+		$results = $GLOBALS['DB']->select(
+			'SELECT
+				*
+			FROM
+				excluded_tables
+			WHERE
+				database_id = ?',
+			[$databaseID]
+		);
+
+		if ($results !== false)
+		{
+			$excludedTables = [];
+			foreach ($results as $row)
+			{
+				$excludedTables[] = $row['table_name'];
+			}
+			return $excludedTables;
+		}
+		else
+			return false;
+	}
+}
+
+class DBConnectionConfig
+{
+	public string $nameID;
+	public DatabaseType $type;
+	public string $hostPath;
+	public ?int $port = null;
+	public string $db = '';
+	public string $user = '';
+	public string $pass = '';
+	public string $charset = 'utf8mb4';
+	public bool|null $trustCertificate = null;
+
+	public function __construct(string $nameID, DatabaseType $type, string $hostPath, ?int $port = null, string $db = '', string $user = '', string $pass = '', string $charset = 'utf8mb4', bool|null $trustCertificate = null)
+	{
+		$this->nameID = strtolower($nameID);
+		$this->type = $type;
+		$this->hostPath = $hostPath;
+		$this->port = $port;
+		$this->db = $db;
+		$this->user = $user;
+		$this->pass = $pass;
+		$this->charset = $charset;
+		$this->trustCertificate = $trustCertificate;
+	}
+
+	/**
+	 * Searches the config variable for a 
+	 *
+	 * @return DBConnectionConfig
+	 */
+	public static function getConfig(string $nameID): DBConnectionConfig | null
+	{
+		return array_find(DATABASE_CONNECTIONS, function ($database) use ($nameID)
+		{
+			if ($database->nameID === $nameID)
+				return true;
+			else
+				return false;
+		});
+	}
+
+	public function getConnection(): DBConnector
+	{
+		return new DBConnector(
+			$this->type->value,
+			$this->hostPath,
+			$this->port,
+			$this->db,
+			$this->user,
+			$this->pass,
+			$this->charset,
+			$this->trustCertificate
+		);
 	}
 }
 

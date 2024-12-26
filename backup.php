@@ -7,16 +7,23 @@ if (CRON_PASSWORD === null || (!isset($argv) || !is_array($argv) || sizeof($argv
 	exit(1);
 }
 
-$timer = new ScopeTimer();
+//Getting all active databases
+$databases = DBDatabase::getAllDatabases(true);
 
-$connection = new DBBConnector(DB_TYPE, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_CHARSET, DB_TRUST_CERT);
+foreach ($databases as $database)
+{
+	$database->runBackup();
+}
+
+// var_dump($databases);
+exit(0);
 $connection->runBackup();
 
 //Encrypt and compress the backups.
 archiveBackups();
 
 //Cleanup the backups according to the max_backup_count.
-cleanupBackups();
+cleanupBackups($databases);
 
 //Update file permissions
 updateBackupPermissions();
@@ -47,7 +54,13 @@ function archiveBackups(): void
 	echo 'ARCHIVE: Complete' . PHP_EOL;
 }
 
-function cleanupBackups(): void
+/**
+ * Undocumented function
+ *
+ * @param array<DBDatabase> $databases
+ * @return void
+ */
+function cleanupBackups(array $databases): void
 {
 	$timer = new ScopeTimer('Cleanup');
 	echo 'CLEANUP: Start' . PHP_EOL;
@@ -61,14 +74,14 @@ function cleanupBackups(): void
 			echo 'CLEANUP: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 	}
 
-	/** @var DatabaseConfig $databaseConfig */
-	foreach (BACKUP_DATABASES as $databaseConfig) //Removing backups according to the maxBackupCount.
+	/** @var DatabaseConfig $database */
+	foreach ($databases as $database) //Removing backups according to the maxBackupCount.
 	{
-		if ($databaseConfig->maxBackupCount === null)
+		if ($database->maxBackupCount === null)
 			continue;
 
-		$backupFiles = rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $databaseConfig->name . DIRECTORY_SEPARATOR . '*.zip');
-		$backupDifference = count($backupFiles) - $databaseConfig->maxBackupCount;
+		$backupFiles = rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $database->uuid . DIRECTORY_SEPARATOR . '*.zip');
+		$backupDifference = count($backupFiles) - $database->maxBackupCount;
 		if ($backupDifference <= 0)
 			continue;
 
