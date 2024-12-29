@@ -38,14 +38,17 @@ function archiveBackups(): void
 {
 	$timer = new ScopeTimer('Archive');
 	echo 'ARCHIVE: START' . PHP_EOL;
-	foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.sql') as $rawSQLFilePath)
+	foreach (SQL_FILE_EXTENSIONS as $sqlFileExtension)
 	{
-		if (zipFile($rawSQLFilePath, BACKUP_PASSWORD, BACKUP_ENCRYPTION_METHOD, BACKUP_COMPRESSION_METHOD, BACKUP_COMRESSION_LEVEL) === true)
+		foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.' . $sqlFileExtension) as $rawSQLFilePath)
 		{
-			echo 'ARCHIVE: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
+			if (zipFile($rawSQLFilePath, BACKUP_PASSWORD, BACKUP_ENCRYPTION_METHOD, BACKUP_COMPRESSION_METHOD, BACKUP_COMRESSION_LEVEL) === true)
+			{
+				echo 'ARCHIVE: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
+			}
+			else
+				echo 'ARCHIVE: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 		}
-		else
-			echo 'ARCHIVE: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 	}
 	echo 'ARCHIVE: COMPLETE' . PHP_EOL;
 }
@@ -62,12 +65,15 @@ function cleanupBackups(array $databases): void
 	echo 'CLEANUP: START' . PHP_EOL;
 
 	//Removing raw SQL dumps.
-	foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.sql') as $rawSQLFilePath)
+	foreach (SQL_FILE_EXTENSIONS as $sqlFileExtension)
 	{
-		if (unlink($rawSQLFilePath) === true)
-			echo 'CLEANUP: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
-		else
-			echo 'CLEANUP: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
+		foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.' . $sqlFileExtension) as $rawSQLFilePath)
+		{
+			if (unlink($rawSQLFilePath) === true)
+				echo 'CLEANUP: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
+			else
+				echo 'CLEANUP: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
+		}
 	}
 
 	/** @var DatabaseConfig $database */

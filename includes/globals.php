@@ -8,5 +8,7 @@ define('REGEX_PATTERNS', [
 
 define('DB_DATETIME_FORMAT', 'Y-m-d H:i:s');
 
+define('SQL_FILE_EXTENSIONS', ['sql', 'sqlite']);
+
 //Setting any configuration options.
 $GLOBALS['constants'] = get_defined_constants();

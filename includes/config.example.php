@@ -21,6 +21,7 @@ define('BACKUP_COMRESSION_LEVEL', 9);
 //Really important!
 //The keys used are publicly visible!
 define('DATABASE_CONNECTIONS', [
+	//MariaDB
 	'Maria DB' => new DBConnectionConfig(
 		nameID: 'mariadb_connection',
 		type: DatabaseType::mariadb,
@@ -31,5 +32,11 @@ define('DATABASE_CONNECTIONS', [
 		pass: '',
 		charset: 'utf8mb4',
 		trustCertificate: true,
+	),
+	//SQLite
+	'php-db-backup' => new DBConnectionConfig(
+		nameID: 'php_db_backup_connection',
+		type: DatabaseType::sqlite,
+		hostPath: ROOT_DATA_FOLDER . 'db_backup.sqlite',
 	)
 ]);

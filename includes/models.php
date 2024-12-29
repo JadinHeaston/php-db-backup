@@ -552,23 +552,32 @@ class DBDatabase
 		if ($this->excludedTables === null)
 			$this->excludedTables = DBDatabase::lookupExcludedTables($this->id);
 
-		//If the type is mariaDB, make use of mariadb-dump.
-		if ($this->connection->type === DatabaseType::mariadb)
-			$this->mariadbDumpDatabase($this->name, $this->excludedTables);
-		else
-		{
-			$connection = $this->connection->getConnection();
-		}
-		return true;
-	}
-
-	public function mariadbDumpDatabase(): bool
-	{
+		//Creating output file path.
 		$outputFolderPath = BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $this->uuid;
 		if (checkForFolder($outputFolderPath) === false)
 			return false;
 
-		$outputFullPath = $outputFolderPath . DIRECTORY_SEPARATOR . $this->name . '_' . date(BACKUP_DATE_FORMAT) . '.sql';
+		$outputFullPath = $outputFolderPath . DIRECTORY_SEPARATOR . $this->name . '_' . date(BACKUP_DATE_FORMAT);
+
+		//If the type is mariaDB, make use of mariadb-dump.
+		if ($this->connection->type === DatabaseType::mariadb)
+		{
+			$outputFullPath .= '.sql';
+			$this->mariadbDumpDatabase($outputFullPath);
+		}
+		elseif ($this->connection->type === DatabaseType::sqlite)
+		{
+			$outputFullPath .= '.sqlite';
+			$sqliteDatabase = new SQLite3($this->connection->hostPath, SQLITE3_OPEN_READONLY);
+			$sqliteDatabase->backup(new SQLite3($outputFullPath));
+		}
+		else
+			echo 'Database type (' . $this->connection->type->displayName() . ') not supported. :(';
+		return true;
+	}
+
+	public function mariadbDumpDatabase(string $outputFullPath): bool
+	{
 		if (count($this->excludedTables) > 0)
 		{
 			$excludedTablesFlags = '';
