@@ -1,6 +1,5 @@
 <?PHP
 require_once(__DIR__ . '/../includes/loader.php');
-require_once(__DIR__ . '/../templates/header.php');
 
 //Submitting
 if (isset($_POST['submit']))
@@ -15,6 +14,8 @@ if (isset($_POST['submit']))
 
 	header('Location: ?id=' . $GLOBALS['DB']->getLastInsertID());
 }
+
+require_once(__DIR__ . '/../templates/header.php');
 
 //Editing. Get values.
 if (isset($_GET['id']) && intval($_GET['id']) !== 0)
