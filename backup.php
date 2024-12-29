@@ -15,10 +15,6 @@ foreach ($databases as $database)
 	$database->runBackup();
 }
 
-// var_dump($databases);
-exit(0);
-$connection->runBackup();
-
 //Encrypt and compress the backups.
 archiveBackups();
 

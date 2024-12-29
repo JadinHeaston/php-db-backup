@@ -495,12 +495,13 @@ class DBDatabase
 		else
 			return false;
 	}
+
 	/**
 	 * Undocumented function
 	 *
 	 * @return DBDatabase|false
 	 */
-	public static function lookupDatabase(int $databaseID): DBDatabase | false
+	public static function lookupDatabaseID(int $databaseID): DBDatabase | false
 	{
 		$results = $GLOBALS['DB']->select(
 			'SELECT
@@ -518,6 +519,29 @@ class DBDatabase
 			return false;
 	}
 
+	/**
+	 * Undocumented function
+	 *
+	 * @return DBDatabase|false
+	 */
+	public static function lookupDatabaseUUID(string $UUID): DBDatabase | false
+	{
+		$results = $GLOBALS['DB']->select(
+			'SELECT
+				*
+			FROM
+				database
+			WHERE
+				uuid = ?',
+			[$UUID]
+		);
+
+		if ($results !== false && count($results) === 1)
+			return new DBDatabase($results[0]);
+		else
+			return false;
+	}
+
 	public function runBackup(): bool
 	{
 		if ($this->active === false)
@@ -527,9 +551,6 @@ class DBDatabase
 
 		if ($this->excludedTables === null)
 			$this->excludedTables = DBDatabase::lookupExcludedTables($this->id);
-
-		var_dump($this);
-		exit(0);
 
 		//If the type is mariaDB, make use of mariadb-dump.
 		if ($this->connection->type === DatabaseType::mariadb)

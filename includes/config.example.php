@@ -30,6 +30,6 @@ define('DATABASE_CONNECTIONS', [
 		user: '',
 		pass: '',
 		charset: 'utf8mb4',
-		trustCertificate: null,
+		trustCertificate: true,
 	)
 ]);

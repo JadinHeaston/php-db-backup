@@ -1,9 +1,9 @@
 <?PHP
 require_once(__DIR__ . '/includes/loader.php');
 
-if (isset($_GET['database-name']) === false || $_GET['database-name'] === '')
+if (isset($_GET['uuid']) === false || $_GET['uuid'] === '')
 {
-	echo 'No `database-name` provided.';
+	echo 'No `uuid` provided.';
 	exit(1);
 }
 elseif (isset($_GET['file-name']) === false || $_GET['file-name'] === '')
@@ -12,13 +12,15 @@ elseif (isset($_GET['file-name']) === false || $_GET['file-name'] === '')
 	exit(1);
 }
 
-$databaseName = preg_replace(REGEX_PATTERNS['database_name'], '', $_GET['database-name']);
+$UUID = $_GET['uuid'];
 $backupFile = preg_replace(REGEX_PATTERNS['file_name'], '', $_GET['file-name']);
-$backupFilePath = BACKUP_ROOT_FOLDER . '/' . $databaseName . '/' . $backupFile;
+$backupFilePath = BACKUP_ROOT_FOLDER . '/' . $UUID . '/' . $backupFile;
 
-if (in_array($databaseName, DATABASE_METADATA->databaseNames, true) === false)
+$database = DBDatabase::lookupDatabaseUUID($UUID);
+
+if ($database->active === false)
 {
-	echo 'Database (' . $databaseName . ') not configured.';
+	echo 'Database (' . $UUID . ') not configured or not visible.';
 	exit(1);
 }
 elseif (file_exists($backupFilePath) === false)

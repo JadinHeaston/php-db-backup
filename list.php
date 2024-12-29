@@ -1,25 +1,25 @@
 <?PHP
 require_once(__DIR__ . '/includes/loader.php');
+
+if (isset($_GET['uuid']) === false || $_GET['uuid'] === '')
+{
+	echo 'No `uuid` provided.';
+	exit(1);
+}
+
+$UUID = $_GET['uuid']; //***** VALIDATE UUID
+
+$database = DBDatabase::lookupDatabaseUUID($UUID);
+
+if ($database->active === false)
+{
+	echo 'Database (' . $UUID . ') not configured or not visible.';
+	exit(1);
+}
+
+$backupFiles = getDatabaseBackupFiles($database->uuid);
+
 require_once(__DIR__ . '/templates/header.php');
-
-if (isset($_GET['database-name']) === false || $_GET['database-name'] === '')
-{
-	echo 'No `database-name` provided.';
-	exit(1);
-}
-
-$databaseName = preg_replace('/[^\p{Nd}\p{Ll}\p{Lu}$_]*/u', '', $_GET['database-name']);
-
-if (
-	in_array($databaseName, DATABASE_METADATA->databaseNames, true) === false
-	|| in_array($databaseName, DATABASE_METADATA->visibleDatabaseNames, true) === false
-)
-{
-	echo 'Database (' . $databaseName . ') not configured or not visible.';
-	exit(1);
-}
-
-$backupFiles = getDatabaseBackupFiles($databaseName);
 
 $tableData = '';
 foreach ($backupFiles as $fileInfo)
@@ -30,7 +30,7 @@ foreach ($backupFiles as $fileInfo)
 			<td>{$fileInfo['modification_time']->format(DATETIME_FORMAT)}</td>
 			<td>{$fileInfo['change_time']->format(DATETIME_FORMAT)}</td>
 			<td>{$fileInfo['access_time']->format(DATETIME_FORMAT)}</td>
-			<td><a href="download.php?database-name={$databaseName}&file-name={$fileInfo['filename']}.{$fileInfo['extension']}">Download</a></td>
+			<td><a href="download.php?uuid={$database->uuid}&file-name={$fileInfo['filename']}.{$fileInfo['extension']}">Download</a></td>
 		</tr>
 		HTML;
 }
@@ -39,7 +39,7 @@ $backupCount = count($backupFiles);
 
 echo <<<HTML
 	<main>
-		<h2><a href="browse.php">Database</a> Backups ({$backupCount}): {$databaseName}</h2>
+		<h2><a href="browse.php">Database</a> Backups ({$backupCount}): {$database->name}</h2>
 		<table>
 			<thead>
 				<tr>

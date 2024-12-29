@@ -212,10 +212,10 @@ function getDatabaseBackupDirectories(): array
 	return $outputBackupDirectories;
 }
 
-function getDatabaseBackupFiles(string $databaseName): array
+function getDatabaseBackupFiles(string $UUID): array
 {
 	$outputBackupFiles = [];
-	$backupFilesRaw = rglob(BACKUP_ROOT_FOLDER . '/' . $databaseName . '/*.zip');
+	$backupFilesRaw = rglob(BACKUP_ROOT_FOLDER . '/' . $UUID . '/*.zip');
 	natcasesort($backupFilesRaw);
 	foreach ($backupFilesRaw as $backupFile)
 	{

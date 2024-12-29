@@ -18,10 +18,9 @@ if (isset($_POST['submit']))
 
 //Editing. Get values.
 if (isset($_GET['id']) && intval($_GET['id']) !== 0)
-	$database = DBDatabase::lookupDatabase(intval($_GET['id']));
+	$database = DBDatabase::lookupDatabaseID(intval($_GET['id']));
 else //New database being configured.
 	$database = new DBDatabase;
-
 
 //Default values.
 if (isset($database->id))
