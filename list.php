@@ -11,12 +11,6 @@ $UUID = $_GET['uuid']; //***** VALIDATE UUID
 
 $database = DBDatabase::lookupDatabaseUUID($UUID);
 
-if ($database->active === false)
-{
-	echo 'Database (' . $UUID . ') not configured or not visible.';
-	exit(1);
-}
-
 $backupFiles = getDatabaseBackupFiles($database->uuid);
 
 require_once(__DIR__ . '/templates/header.php');
