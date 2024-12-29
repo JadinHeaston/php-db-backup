@@ -1,6 +1,8 @@
 # PHP Database Backup
 
 Only supports MariaDB (Version 10.3.39) right now.
+> [!CAUTION]  
+> Views are NOT backed up! Only the raw tables (data) are backed up.
 
 ## Important Note
 
