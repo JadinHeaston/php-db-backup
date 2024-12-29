@@ -20,12 +20,17 @@ foreach ($databases as $database)
 
 	$databaseTypeText = $database->connection->type->displayName();
 	$databaseActiveText = ($database->active === true ? 'Active' : 'Inactive');
+	$backupFiles = getBackupFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $database->uuid . DIRECTORY_SEPARATOR);
+	$currentBackupCount = count($backupFiles);
+	$totalBackupSize = humanReadableBytes(getFolderSize($backupFiles));
 	$tableBody .= <<<HTML
 		<tr>
 			<td>{$database->name}</td>
 			<td>{$databaseTypeText}</td>
 			<td>{$databaseActiveText}</td>
+			<td>{$currentBackupCount}</td>
 			<td>{$database->maxBackupCount}</td>
+			<td>{$totalBackupSize}</td>
 			<td><a href="list.php?uuid={$database->uuid}">View</a></td>
 		</tr>
 		HTML;
@@ -41,7 +46,9 @@ echo <<<HTML
 					<th>Database</th>
 					<th>Connection Type</th>
 					<th>Status</th>
-					<th>Max Backup Count</th>
+					<th title="How many backups are currently available.">Backup Count</th>
+					<th title="How many backups are kept at a time.">Backup Limit</th>
+					<th>Backup Size</th>
 					<th>Actions</th>
 				</tr>
 			</thead>

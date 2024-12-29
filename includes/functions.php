@@ -110,11 +110,11 @@ function outputFile(string $filePath, string $contentType = 'binary', ?string $o
 function rglob(string $pattern, int $flags = 0): array | false
 {
 	$files = glob($pattern, $flags);
-	foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir)
+	foreach (glob(dirname($pattern) . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir)
 	{
 		$files = array_merge(
 			[],
-			...[$files, rglob($dir . "/" . basename($pattern), $flags)]
+			...[$files, rglob($dir . DIRECTORY_SEPARATOR . basename($pattern), $flags)]
 		);
 	}
 	return $files;
@@ -194,7 +194,7 @@ function zipFile(string $filePath, string $password = '', string $encryptionMeth
 function getDatabaseBackupDirectories(): array
 {
 	$outputBackupDirectories = [];
-	$backupFilesRaw = rglob(BACKUP_ROOT_FOLDER . '/*.zip');
+	$backupFilesRaw = getBackupFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR);
 	natcasesort($backupFilesRaw);
 	foreach ($backupFilesRaw as $backupFile)
 	{
@@ -215,7 +215,7 @@ function getDatabaseBackupDirectories(): array
 function getDatabaseBackupFiles(string $UUID): array
 {
 	$outputBackupFiles = [];
-	$backupFilesRaw = rglob(BACKUP_ROOT_FOLDER . '/' . $UUID . '/*.zip');
+	$backupFilesRaw = getBackupFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $UUID . DIRECTORY_SEPARATOR);
 	natcasesort($backupFilesRaw);
 	foreach ($backupFilesRaw as $backupFile)
 	{
@@ -223,6 +223,7 @@ function getDatabaseBackupFiles(string $UUID): array
 		$backupFileInfo['access_time'] = (new DateTime())->setTimestamp(fileatime($backupFile));
 		$backupFileInfo['change_time'] = (new DateTime())->setTimestamp(filectime($backupFile));
 		$backupFileInfo['modification_time'] = (new DateTime())->setTimestamp(filemtime($backupFile));
+		$backupFileInfo['size_bytes'] = realFileSize($backupFile);
 		$outputBackupFiles[] = $backupFileInfo;
 	}
 	array_multisort($outputBackupFiles);
@@ -242,4 +243,140 @@ function uuidv4(): string
 	$data[8] = chr(ord($data[8]) & 0x3f | 0x80); // set bits 6-7 to 10
 
 	return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+/**
+ * Undocumented function
+ *
+ * @param string $directory - With a trailing slash.
+ * @return array
+ */
+function getBackupFiles(string $directory): array
+{
+	return rglob($directory . '*.zip');
+}
+
+/**
+ * Undocumented function
+ *
+ * @param string $directory - With a trailing slash.
+ * @return array
+ */
+function getRawFiles(string $directory): array
+{
+	$rawFiles = [];
+	foreach (SQL_FILE_EXTENSIONS as $extension)
+	{
+		array_push($rawFiles, rglob($directory . '*.' . $extension));
+	}
+	return $rawFiles;
+}
+
+/**
+ * Converts raw bytes into human readable format. 
+ * 
+ * @param int $bytes 
+ * @return string human readable format
+ */
+function humanReadableBytes(int $bytes, int $precision = 3): string
+{
+	$result = '0 B';
+	$bytes = floatval($bytes);
+	$arBytes = array(
+		[
+			'UNIT' => 'TB',
+			'VALUE' => pow(1024, 4)
+		],
+		[
+			'UNIT' => 'GB',
+			'VALUE' => pow(1024, 3)
+		],
+		[
+			'UNIT' => 'MB',
+			'VALUE' => pow(1024, 2)
+		],
+		[
+			'UNIT' => 'KB',
+			'VALUE' => 1024
+		],
+		[
+			'UNIT' => 'B',
+			'VALUE' => 1
+		],
+	);
+
+	foreach ($arBytes as $arItem)
+	{
+		if ($bytes < $arItem['VALUE'])
+			continue;
+		$result = $bytes / $arItem['VALUE'];
+		$result = str_replace('.', ',', strval(round($result, $precision))) . ' ' . $arItem['UNIT'];
+		break;
+	}
+	return $result;
+}
+
+/**
+ * Return file size (even for file > 2 Gb)
+ * For file size over PHP_INT_MAX (2 147 483 647), PHP filesize function loops from -PHP_INT_MAX to PHP_INT_MAX.
+ *
+ * @param string $path Path of the file
+ * @return mixed File size (bytes) or false if error
+ */
+function realFileSize(string $path): int | false
+{
+	if (!file_exists($path))
+		return false;
+
+	$size = filesize($path);
+
+	if (!($file = fopen($path, 'rb')))
+		return false;
+
+	if ($size >= 0)
+	{ //Check if it really is a small file (< 2 GB)
+		if (fseek($file, 0, SEEK_END) === 0)
+		{ //It really is a small file
+			fclose($file);
+			return $size;
+		}
+	}
+
+	//Quickly jump the first 2 GB with fseek. After that fseek is not working on 32 bit php (it uses int internally)
+	$size = PHP_INT_MAX - 1;
+	if (fseek($file, PHP_INT_MAX - 1) !== 0)
+	{
+		fclose($file);
+		return false;
+	}
+
+	$length = 1024 * 1024;
+	while (!feof($file))
+	{ //Read the file until end
+		$read = fread($file, $length);
+		$size = bcadd($size, $length);
+	}
+	$size = bcsub($size, $length);
+	$size = bcadd($size, strlen($read));
+
+	fclose($file);
+	return $size;
+}
+
+/**
+ * Takes in an array of file paths and returns the size of the files.
+ *
+ * @param array $filePaths
+ * @return integer bytes
+ */
+function getFolderSize(array $filePaths): int
+{
+	$size = 0;
+
+	foreach ($filePaths as $filePath)
+	{
+		$size += realFileSize($filePath);
+	}
+
+	return $size;
 }

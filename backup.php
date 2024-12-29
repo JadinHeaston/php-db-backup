@@ -25,7 +25,7 @@ cleanupBackups($databases);
 updateBackupPermissions();
 function updateBackupPermissions(): void
 {
-	foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.zip') as $backupFilePath)
+	foreach (getBackupFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR) as $backupFilePath)
 	{
 		chown($backupFilePath, APPLICATION_USER);
 		chgrp($backupFilePath, APPLICATION_GROUP);
@@ -38,17 +38,15 @@ function archiveBackups(): void
 {
 	$timer = new ScopeTimer('Archive');
 	echo 'ARCHIVE: START' . PHP_EOL;
-	foreach (SQL_FILE_EXTENSIONS as $sqlFileExtension)
+	$rawFiles = getRawFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR);
+	foreach ($rawFiles as $rawSQLFilePath)
 	{
-		foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.' . $sqlFileExtension) as $rawSQLFilePath)
+		if (zipFile($rawSQLFilePath, BACKUP_PASSWORD, BACKUP_ENCRYPTION_METHOD, BACKUP_COMPRESSION_METHOD, BACKUP_COMRESSION_LEVEL) === true)
 		{
-			if (zipFile($rawSQLFilePath, BACKUP_PASSWORD, BACKUP_ENCRYPTION_METHOD, BACKUP_COMPRESSION_METHOD, BACKUP_COMRESSION_LEVEL) === true)
-			{
-				echo 'ARCHIVE: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
-			}
-			else
-				echo 'ARCHIVE: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
+			echo 'ARCHIVE: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
 		}
+		else
+			echo 'ARCHIVE: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 	}
 	echo 'ARCHIVE: COMPLETE' . PHP_EOL;
 }
@@ -65,15 +63,13 @@ function cleanupBackups(array $databases): void
 	echo 'CLEANUP: START' . PHP_EOL;
 
 	//Removing raw SQL dumps.
-	foreach (SQL_FILE_EXTENSIONS as $sqlFileExtension)
+	$rawFiles = getRawFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR);
+	foreach ($rawFiles as $rawSQLFilePath)
 	{
-		foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.' . $sqlFileExtension) as $rawSQLFilePath)
-		{
-			if (unlink($rawSQLFilePath) === true)
-				echo 'CLEANUP: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
-			else
-				echo 'CLEANUP: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
-		}
+		if (unlink($rawSQLFilePath) === true)
+			echo 'CLEANUP: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
+		else
+			echo 'CLEANUP: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 	}
 
 	/** @var DatabaseConfig $database */
@@ -82,7 +78,7 @@ function cleanupBackups(array $databases): void
 		if ($database->maxBackupCount === null)
 			continue;
 
-		$backupFiles = rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $database->uuid . DIRECTORY_SEPARATOR . '*.zip');
+		$backupFiles = getBackupFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $database->uuid . DIRECTORY_SEPARATOR);
 		$backupDifference = count($backupFiles) - $database->maxBackupCount;
 		if ($backupDifference <= 0)
 			continue;

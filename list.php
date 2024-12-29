@@ -24,12 +24,14 @@ require_once(__DIR__ . '/templates/header.php');
 $tableData = '';
 foreach ($backupFiles as $fileInfo)
 {
+	$fileSize = humanReadableBytes($fileInfo['size_bytes']);
 	$tableData .= <<<HTML
 		<tr>
 			<td>{$fileInfo['filename']}</td>
 			<td>{$fileInfo['modification_time']->format(DATETIME_FORMAT)}</td>
 			<td>{$fileInfo['change_time']->format(DATETIME_FORMAT)}</td>
 			<td>{$fileInfo['access_time']->format(DATETIME_FORMAT)}</td>
+			<td>{$fileSize}</td>
 			<td><a href="download.php?uuid={$database->uuid}&file-name={$fileInfo['filename']}.{$fileInfo['extension']}">Download</a></td>
 		</tr>
 		HTML;
@@ -47,6 +49,7 @@ echo <<<HTML
 					<th>Modification Time</th>
 					<th>Change Time</th>
 					<th>Access Time</th>
+					<th>Size</th>
 					<th>Actions</th>
 				</tr>
 			</thead>
