@@ -1,0 +1,61 @@
+services:
+  proxy:
+    container_name: pdb-proxy
+    image: nginx:mainline-alpine3.20-slim
+    restart: unless-stopped
+    ports:
+      - 3500:80
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - internal
+    depends_on:
+      - php
+      - mariadb
+
+  php:
+    container_name: pdb-php
+    build: './docker/php'
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+    networks:
+      - internal
+    depends_on:
+      - mariadb
+
+  phpmyadmin:
+    container_name: pdb-phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mariadb
+      - UPLOAD_LIMIT=1G
+    networks:
+      - internal
+    depends_on:
+      - mariadb
+
+  mariadb:
+    container_name: pdb-mariadb
+    image: mariadb:latest
+    restart: unless-stopped
+    volumes:
+      - pdb-mariadb-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: DevelopmentPassword
+    networks:
+      - internal
+
+volumes:
+  pdb-mariadb-data:
+
+
+networks:
+  internal:
+    driver: bridge
