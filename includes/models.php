@@ -579,7 +579,7 @@ class DBDatabase
 		}
 		else
 			$excludedTablesFlags = '';
-		$command = '"' . BACKUP_EXECUTABLE . '" --host="' . $this->connection->hostPath . '" --user="' . $this->connection->user . '" --password="' . $this->connection->pass . '" --compact --complete-insert --compress --dump-date --extended-insert --lock-tables=false --single-transaction --skip-comments --quick --events --triggers --routines ' . $excludedTablesFlags . ' --databases "' . $this->name . '" > "' . $outputFullPath . '"';
+		$command = '"' . BACKUP_EXECUTABLE . '" --host="' . $this->connection->hostPath . '" --port="' . $this->connection->port . '" --user="' . $this->connection->user . '" --password="' . $this->connection->pass . '" --ssl-verify-server-cert="' . intval($this->connection->trustCertificate) . '" --compact --complete-insert --compress --dump-date --extended-insert --lock-tables=false --single-transaction --skip-comments --quick --events --triggers --routines ' . $excludedTablesFlags . ' --databases "' . $this->name . '" > "' . $outputFullPath . '"';
 
 		echo 'BACKUP: Start - ' . $this->name . PHP_EOL;
 		$output = runCommand($command);
