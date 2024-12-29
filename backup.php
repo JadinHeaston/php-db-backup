@@ -41,17 +41,17 @@ function updateBackupPermissions(): void
 function archiveBackups(): void
 {
 	$timer = new ScopeTimer('Archive');
-	echo 'ARCHIVE: Start' . PHP_EOL;
+	echo 'ARCHIVE: START' . PHP_EOL;
 	foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.sql') as $rawSQLFilePath)
 	{
 		if (zipFile($rawSQLFilePath, BACKUP_PASSWORD, BACKUP_ENCRYPTION_METHOD, BACKUP_COMPRESSION_METHOD, BACKUP_COMRESSION_LEVEL) === true)
 		{
-			echo 'ARCHIVE: Success - ' . basename($rawSQLFilePath) . PHP_EOL;
+			echo 'ARCHIVE: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
 		}
 		else
 			echo 'ARCHIVE: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 	}
-	echo 'ARCHIVE: Complete' . PHP_EOL;
+	echo 'ARCHIVE: COMPLETE' . PHP_EOL;
 }
 
 /**
@@ -63,13 +63,13 @@ function archiveBackups(): void
 function cleanupBackups(array $databases): void
 {
 	$timer = new ScopeTimer('Cleanup');
-	echo 'CLEANUP: Start' . PHP_EOL;
+	echo 'CLEANUP: START' . PHP_EOL;
 
 	//Removing raw SQL dumps.
 	foreach (rglob(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . '*.sql') as $rawSQLFilePath)
 	{
 		if (unlink($rawSQLFilePath) === true)
-			echo 'CLEANUP: Success - ' . basename($rawSQLFilePath) . PHP_EOL;
+			echo 'CLEANUP: SUCCESS - ' . basename($rawSQLFilePath) . PHP_EOL;
 		else
 			echo 'CLEANUP: FAILURE - ' . basename($rawSQLFilePath) . PHP_EOL;
 	}
@@ -88,10 +88,10 @@ function cleanupBackups(array $databases): void
 		for ($iterator = 0; $iterator < $backupDifference; ++$iterator)
 		{
 			if (unlink($backupFiles[$iterator]) === true)
-				echo 'CLEANUP: Success - ' . basename($backupFiles[$iterator]) . PHP_EOL;
+				echo 'CLEANUP: SUCCESS - ' . basename($backupFiles[$iterator]) . PHP_EOL;
 			else
 				echo 'CLEANUP: FAILURE - ' . basename($backupFiles[$iterator]) . PHP_EOL;
 		}
 	}
-	echo 'CLEANUP: Complete' . PHP_EOL;
+	echo 'CLEANUP: COMPLETE' . PHP_EOL;
 }
