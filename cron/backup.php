@@ -1,7 +1,7 @@
 <?php
 if (isset($GLOBALS['run_cron']) === false || $GLOBALS['run_cron'] === false)
 	return;
-require_once(__DIR__ . '/includes/loader.php');
+require_once(__DIR__ . '/../includes/loader.php');
 
 //Getting all active databases
 $databases = DBDatabase::getAllDatabases(true);
