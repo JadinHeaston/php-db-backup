@@ -278,7 +278,7 @@ function getRawFiles(string $directory): array
  * @param int $bytes 
  * @return string human readable format
  */
-function humanReadableBytes(int $bytes, int $precision = 3): string
+function humanReadableBytes(int|float $bytes, int $precision = 3): string
 {
 	$result = '0 B';
 	$bytes = floatval($bytes);
@@ -310,7 +310,7 @@ function humanReadableBytes(int $bytes, int $precision = 3): string
 		if ($bytes < $arItem['VALUE'])
 			continue;
 		$result = $bytes / $arItem['VALUE'];
-		$result = str_replace('.', ',', strval(round($result, $precision))) . ' ' . $arItem['UNIT'];
+		$result = strval(round($result, $precision)) . ' ' . $arItem['UNIT'];
 		break;
 	}
 	return $result;
