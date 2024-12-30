@@ -1,11 +1,7 @@
 <?PHP
-$GLOBALS['disable_auth'] = true;
+if (isset($GLOBALS['run_cron']) === false || $GLOBALS['run_cron'] === false)
+	return;
 require_once(__DIR__ . '/includes/loader.php');
-if (CRON_PASSWORD === null || (!isset($argv) || !is_array($argv) || sizeof($argv) <= 1 || $argv[1] !== CRON_PASSWORD))
-{
-	echo 'Invalid CRON_PASSWORD';
-	exit(1);
-}
 
 //Getting total data size of backups.
 $backupFiles = getBackupFiles(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR);
