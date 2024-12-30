@@ -310,7 +310,7 @@ function humanReadableBytes(int $bytes, int $precision = 3): string
 		if ($bytes < $arItem['VALUE'])
 			continue;
 		$result = $bytes / $arItem['VALUE'];
-		$result = str_replace('.', ',', strval(round($result, $precision))) . ' ' . $arItem['UNIT'];
+		$result = strval(round($result, $precision)) . ' ' . $arItem['UNIT'];
 		break;
 	}
 	return $result;
