@@ -58,6 +58,15 @@ echo <<<HTML
 			<input type="hidden" name="uuid" id="uuid" value="{$databaseUUID}" required />
 
 			<div class="input-group">
+				<label for="display-id">ID: </label>
+				<input type="number" id="display-id" value="{$databaseID}" disabled />
+			</div>
+			<div class="input-group">
+				<label for="display-uuid">UUID: </label>
+				<input type="text" id="display-uuid" value="{$databaseUUID}" disabled />
+			</div>
+
+			<div class="input-group">
 				<label for="name">Name: </label>
 				<input type="text" name="name" id="name" value="{$database->name}" placeholder="Name"  minlength="1" required />
 			</div>
