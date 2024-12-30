@@ -1,6 +1,7 @@
 # PHP Database Backup
 
-Only supports MariaDB (Version 10.3.39) right now.
+Only supports MariaDB (Version 10.3.39) and SQlite right now.
+
 > [!CAUTION]  
 > Views are NOT backed up! Only the raw tables (data) are backed up.
 
@@ -10,6 +11,8 @@ The backups will **LOCK** the database when running, halting reads/writes.
 
 ## User Permissions
 
+### MariaDB
+
 - Data
 	- `SELECT`
 - Structure
@@ -18,3 +21,7 @@ The backups will **LOCK** the database when running, halting reads/writes.
 	- `TRIGGER`
 - Administration
 	- `LOCK TABLES`
+
+### SQLite
+
+Only requires read access to the SQLite file.
