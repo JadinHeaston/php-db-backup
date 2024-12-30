@@ -14,6 +14,20 @@ if (isset($_POST['submit']))
 
 	header('Location: ?id=' . $GLOBALS['DB']->getLastInsertID());
 }
+elseif (isset($_POST['delete'])) //Deleting
+{
+	$database = DBDatabase::lookupDatabaseID(intval($_GET['id']));
+
+	$database->delete();
+
+	if ($database->insertUpdateDatabase() === false)
+	{
+		trigger_error('Failed to write to database.', E_USER_ERROR);
+		exit(1);
+	}
+
+	header('Location: ?id=' . $GLOBALS['DB']->getLastInsertID());
+}
 
 require_once(__DIR__ . '/../templates/header.php');
 
@@ -66,8 +80,8 @@ echo <<<HTML
 				<input type="text" id="display-uuid" value="{$databaseUUID}" disabled />
 			</div>
 
-			<div class="input-group">
-				<label for="name">Name: </label>
+			<div class="input-group" title="This should be EXACTLY the same as the database name itself.">
+				<label for="name">Database Name: </label>
 				<input type="text" name="name" id="name" value="{$database->name}" placeholder="Name"  minlength="1" required />
 			</div>
 			<div class="input-group">
