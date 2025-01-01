@@ -1,4 +1,4 @@
-<?PHP
+<?php
 
 /**
  * Custom Auth function that should return whether the user is authorized or not.

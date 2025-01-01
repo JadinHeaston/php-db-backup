@@ -1,4 +1,4 @@
-<?PHP
+<?php
 if (isset($GLOBALS['run_cron']) === false || $GLOBALS['run_cron'] === false)
 	return;
 require_once(__DIR__ . '/../includes/loader.php');

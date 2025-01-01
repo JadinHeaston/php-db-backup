@@ -1,4 +1,4 @@
-<?PHP
+<?php
 require_once(__DIR__ . '/includes/loader.php');
 
 if (isset($_GET['uuid']) === false || $_GET['uuid'] === '')

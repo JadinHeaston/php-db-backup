@@ -1,4 +1,4 @@
-<?PHP
+<?php
 if (isHTMX() === true)
 	return;
 //Create version hashes based on last modified time.
