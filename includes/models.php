@@ -7,26 +7,31 @@ class DatabaseConnector
 
 	private $queries = array(
 		'listTables' => array(
+			'mariadb' => 'SHOW FULL tables',
 			'mysql' => 'SHOW FULL tables',
 			'sqlite' => 'SELECT * FROM sqlite_schema WHERE type =\'table\' AND name NOT LIKE \'sqlite_%\'',
 			'sqlsrv' => 'SELECT DISTINCT TABLE_NAME FROM information_schema.tables'
 		),
 		'getTableInformation' => array(
+			'mariadb' => 'DESCRIBE ?',
 			'mysql' => 'DESCRIBE ?',
 			'sqlite' => 'PRAGMA table_info(?)',
 			'sqlsrv' => 'SELECT * FROM information_schema.columns WHERE TABLE_NAME = ? order by ORDINAL_POSITION'
 		),
 		'getTableIndexes' => array(
+			'mariadb' => 'SHOW INDEX FROM ?',
 			'mysql' => 'SHOW INDEX FROM ?',
 			'sqlite' => 'SELECT * FROM sqlite_master WHERE type = \'index\' AND tbl_name = ?',
 			'sqlsrv' => 'SELECT * FROM sys.indexes WHERE object_id = (SELECT object_id FROM sys.objects WHERE name = ?)'
 		),
 		'getTableCreation' => array(
+			'mariadb' => 'SHOW CREATE TABLE ?',
 			'mysql' => 'SHOW CREATE TABLE ?',
 			'sqlite' => 'SELECT sql FROM sqlite_schema WHERE name = ?',
 			'sqlsrv' => false //Not available without a stored procedure.
 		),
 		'createTable' => array(
+			'mariadb' => 'CREATE TABLE IF NOT EXISTS ? ()',
 			'mysql' => 'CREATE TABLE IF NOT EXISTS ? ()',
 			'sqlite' => 'CREATE TABLE IF NOT EXISTS ? (column_name datatype, column_name datatype);',
 			'sqlsrv' => ''
@@ -39,8 +44,12 @@ class DatabaseConnector
 		try
 		{
 			//Creating DSN string.
-			$dsn = $this->type;
-			if ($this->type === 'mysql')
+			if ($this->type === 'mysql' || $this->type === 'mariadb')
+				$dsn = 'mysql';
+			else
+				$dsn = $this->type;
+
+			if ($this->type === 'mysql' || $this->type === 'mariadb')
 				$dsn .= ':host=';
 			elseif ($this->type === 'sqlite')
 				$dsn .= ':';
@@ -49,17 +58,17 @@ class DatabaseConnector
 
 			$dsn .= $hostPath;
 
-			if ($this->type === 'mysql')
+			if ($this->type === 'mysql' || $this->type === 'mariadb')
 				$dsn .= ';port=' . strval($port);
 
-			if ($this->type === 'mysql')
+			if ($this->type === 'mysql' || $this->type === 'mariadb')
 				$dsn .= ';dbname=';
 			elseif ($this->type === 'sqlsrv')
 				$dsn .= ';Database=';
 
 			$dsn .= $db;
 
-			if ($this->type === 'mysql')
+			if ($this->type === 'mysql' || $this->type === 'mariadb')
 				$dsn .= ';charset=' . $charset;
 			if ($this->type === 'sqlsrv' && $trustCertificate !== null)
 				$dsn .= ';TrustServerCertificate=' . strval(intval($trustCertificate));
@@ -579,14 +588,12 @@ class DBDatabase
 		//If the type is mariaDB, make use of mariadb-dump.
 		if ($this->connection->type === DatabaseType::mariadb)
 		{
-			$outputFullPath .= '.sql';
-			$this->mariadbDumpDatabase($outputFullPath);
+			$this->mariadbDumpDatabase($outputFullPath . '.sql');
 		}
 		elseif ($this->connection->type === DatabaseType::sqlite)
 		{
-			$outputFullPath .= '.sqlite';
 			$sqliteDatabase = new SQLite3($this->connection->hostPath, SQLITE3_OPEN_READONLY);
-			$sqliteDatabase->backup(new SQLite3($outputFullPath));
+			$sqliteDatabase->backup(new SQLite3($outputFullPath . '.sqlite'));
 		}
 		else
 			echo 'Database type (' . $this->connection->type->displayName() . ') not supported. :(';
@@ -687,9 +694,9 @@ class DBConnectionConfig
 		});
 	}
 
-	public function getConnection(): DBConnector
+	public function getConnection(): DatabaseConnector
 	{
-		return new DBConnector(
+		return new DatabaseConnector(
 			$this->type->value,
 			$this->hostPath,
 			$this->port,

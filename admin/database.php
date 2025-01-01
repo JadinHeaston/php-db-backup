@@ -102,7 +102,7 @@ echo <<<HTML
 				<input type="number" name="max_backup_count" id="max_backup_count" value="{$database->maxBackupCount}" placeholder="Max Backup Count" required />
 			</div>
 			<div class="input-group">
-				<button type="submit" name="submit" id="submit" value="">Submit</button>
+				<button type="submit" name="submit" value="">Submit</button>
 				<button type="reset">Reset</button>
 				<button type="submit" name="delete" value="">Delete</button>
 			</div>
