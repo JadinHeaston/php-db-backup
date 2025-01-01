@@ -5,10 +5,7 @@ require_once(__DIR__ . '/../templates/header.php');
 //Getting all databases from the DB.
 $databases = DBDatabase::getAllDatabases();
 if ($databases === false)
-{
-	trigger_error('Failed to get databases.', E_USER_ERROR);
-	exit(1);
-}
+	exit('Failed to get databases.');
 
 $tableBody = '';
 foreach ($databases as $database)
