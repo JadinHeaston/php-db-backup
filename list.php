@@ -35,7 +35,7 @@ $backupCount = count($backupFiles);
 
 echo <<<HTML
 	<main>
-		<h2><a href="browse.php">Database</a> Backups ({$backupCount}): {$database->name}</h2>
+		<h2><a href="browse.php" hx-get="browse.php">Database</a> Backups ({$backupCount}): {$database->name}</h2>
 		<table>
 			<thead>
 				<tr>

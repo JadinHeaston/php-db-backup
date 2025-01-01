@@ -28,7 +28,7 @@ foreach ($databases as $database)
 			<td>{$currentBackupCount}</td>
 			<td>{$database->maxBackupCount}</td>
 			<td>{$totalBackupSize}</td>
-			<td><a href="list.php?uuid={$database->uuid}">View</a></td>
+			<td><a href="list.php?uuid={$database->uuid}" hx-get="list.php?uuid={$database->uuid}">View</a></td>
 		</tr>
 		HTML;
 }

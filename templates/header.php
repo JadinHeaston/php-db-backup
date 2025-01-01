@@ -1,4 +1,6 @@
 <?PHP
+if (isHTMX() === true)
+	return;
 //Create version hashes based on last modified time.
 $versionedFiles = versionedFiles(
 	[
@@ -23,7 +25,7 @@ echo <<<HTML
 		<script src="{$GLOBALS['constants']['APP_ROOT']}vendor/htmx/htmx.min.js?v={$versionedFiles[__DIR__ . '/../vendor/htmx/htmx.min.js']['version']}" integrity="{$versionedFiles[__DIR__ . '/../vendor/htmx/htmx.min.js']['integrity']}"></script>
 	</head>
 
-	<body>
+	<body hx-target="main" hx-select="main" hx-swap="outerHTML" hx-push-url="true">
 
 		<header>
 			<a href="{$GLOBALS['constants']['APP_ROOT']}index.php">
