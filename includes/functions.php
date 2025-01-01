@@ -267,7 +267,7 @@ function getRawFiles(string $directory): array
 	$rawFiles = [];
 	foreach (SQL_FILE_EXTENSIONS as $extension)
 	{
-		array_push($rawFiles, rglob($directory . '*.' . $extension));
+		array_push($rawFiles, ...rglob($directory . '*.' . $extension));
 	}
 	return $rawFiles;
 }
