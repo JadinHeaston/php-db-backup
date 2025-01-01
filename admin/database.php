@@ -71,11 +71,11 @@ echo <<<HTML
 
 			<div class="input-group">
 				<label for="display-id">ID: </label>
-				<input type="number" id="display-id" value="{$databaseID}" disabled />
+				<input type="number" id="display-id" value="{$databaseID}" placeholder="{auto-generated}" disabled />
 			</div>
 			<div class="input-group">
 				<label for="display-uuid">UUID: </label>
-				<input type="text" id="display-uuid" value="{$databaseUUID}" disabled />
+				<input type="text" id="display-uuid" value="{$databaseUUID}" placeholder="{auto-generated}" disabled />
 			</div>
 
 			<div class="input-group" title="This should be EXACTLY the same as the database name itself.">
