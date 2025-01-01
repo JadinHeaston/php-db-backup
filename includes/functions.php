@@ -380,3 +380,23 @@ function getFolderSize(array $filePaths): int
 
 	return $size;
 }
+
+function deleteDirectory(string $directory): bool
+{
+	if (!file_exists($directory))
+		return true;
+
+	if (!is_dir($directory))
+		return unlink($directory);
+
+	foreach (scandir($directory) as $item)
+	{
+		if ($item == '.' || $item == '..')
+			continue;
+
+		if (!deleteDirectory($directory . DIRECTORY_SEPARATOR . $item))
+			return false;
+	}
+
+	return rmdir($directory);
+}

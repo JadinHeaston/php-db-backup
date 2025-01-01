@@ -542,6 +542,23 @@ class DBDatabase
 			return false;
 	}
 
+	/**
+	 * Undocumented function
+	 *
+	 * @return bool
+	 */
+	public static function deleteDatabaseID(int $databaseID): bool
+	{
+		return ($GLOBALS['DB']->executeStatement(
+			'DELETE
+			FROM
+				database
+			WHERE
+				id = ?',
+			[$databaseID]
+		) !== false ? true : false);
+	}
+
 	public function runBackup(): bool
 	{
 		if ($this->active === false)

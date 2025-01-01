@@ -7,26 +7,25 @@ if (isset($_POST['submit']))
 	$database = DBDatabase::importInputs($_POST);
 
 	if ($database->insertUpdateDatabase() === false)
-	{
-		trigger_error('Failed to write to database.', E_USER_ERROR);
-		exit(1);
-	}
+		exit('Failed to write to database. (' .  $database->id .  ')');
 
 	header('Location: ?id=' . $GLOBALS['DB']->getLastInsertID());
 }
 elseif (isset($_POST['delete'])) //Deleting
 {
-	$database = DBDatabase::lookupDatabaseID(intval($_GET['id']));
+	$database = DBDatabase::lookupDatabaseID(intval($_POST['id']));
 
-	$database->delete();
+	if ($database === false)
+		exit('Failed to get database. (' . intval($_POST['id']) . ')');
 
-	if ($database->insertUpdateDatabase() === false)
-	{
-		trigger_error('Failed to write to database.', E_USER_ERROR);
-		exit(1);
-	}
+	if (DBDatabase::deleteDatabaseID($database->id) === false)
+		exit('Failed to delete database. (' .  $database->id .  ')');
 
-	header('Location: ?id=' . $GLOBALS['DB']->getLastInsertID());
+	//Removing backup...
+	if (deleteDirectory(BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $database->uuid) === false)
+		exit('Failed to delete database backups. (' .  $database->uuid .  ')');
+
+	header('Location: index.php');
 }
 
 require_once(__DIR__ . '/../templates/header.php');
@@ -46,7 +45,6 @@ if (isset($database->uuid))
 	$databaseUUID = $database->uuid;
 else
 	$databaseUUID = '';
-
 
 $connectionOptions = '';
 foreach (DATABASE_CONNECTIONS as $connectionName => $connection)
@@ -106,6 +104,7 @@ echo <<<HTML
 			<div class="input-group">
 				<button type="submit" name="submit" id="submit" value="">Submit</button>
 				<button type="reset">Reset</button>
+				<button type="submit" name="delete" value="">Delete</button>
 			</div>
 		</form>
 	</main>
