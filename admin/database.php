@@ -36,6 +36,9 @@ if (isset($_GET['id']) && intval($_GET['id']) !== 0)
 else //New database being configured.
 	$database = new DBDatabase;
 
+if ($database === false)
+	exit('Failed to get database. (' . intval($_GET['id']) . ')');
+
 //Default values.
 if (isset($database->id))
 	$databaseID = $database->id;
