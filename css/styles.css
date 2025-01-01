@@ -60,6 +60,10 @@ label.required::after {
 	user-select: none;
 }
 
+button {
+	cursor: pointer;
+}
+
 table,
 tr,
 th,
@@ -103,10 +107,40 @@ header>a {
 	text-decoration: none;
 }
 
+main {
+	padding: 1rem;
+}
+
 main>table {
 	background-color: var(--second-background-color);
 }
 
 main>table thead {
 	background-color: var(--third-background-color);
+}
+
+form {
+	width: fit-content;
+}
+
+form .input-group {
+	display: flex;
+	align-items: flex;
+	justify-content: space-between;
+	padding: 0.25rem;
+}
+
+form .input-group>input,
+form .input-group>textarea,
+form .input-group>select {
+	width: 50%;
+	margin-left: 1rem;
+}
+
+form .input-group:last-child {
+	justify-content: center;
+}
+
+form .input-group:last-child > * {
+	margin: 1rem;
 }
