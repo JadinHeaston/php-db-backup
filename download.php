@@ -14,7 +14,7 @@ elseif (isset($_GET['file-name']) === false || $_GET['file-name'] === '')
 
 $UUID = $_GET['uuid'];
 $backupFile = preg_replace(REGEX_PATTERNS['file_name'], '', $_GET['file-name']);
-$backupFilePath = BACKUP_ROOT_FOLDER . '/' . $UUID . '/' . $backupFile;
+$backupFilePath = BACKUP_ROOT_FOLDER . DIRECTORY_SEPARATOR . $UUID . DIRECTORY_SEPARATOR . $backupFile;
 
 $database = DBDatabase::lookupDatabaseUUID($UUID);
 

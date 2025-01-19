@@ -8,9 +8,9 @@ define('CRON_PASSWORD', null);
 define('APPLICATION_USER', 'www-data');
 define('APPLICATION_GROUP', 'www-data');
 
-define('ROOT_DATA_FOLDER', __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR); //No trailing slash
+define('ROOT_DATA_FOLDER', __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'data'); //No trailing slash
 define('BACKUP_EXECUTABLE', 'mariadb-dump'); //File path (unless it's in the PATH) to the mariadb-dump (mysqldump) application.
-define('BACKUP_ROOT_FOLDER', ROOT_DATA_FOLDER . DIRECTORY_SEPARATOR . 'backups' . DIRECTORY_SEPARATOR); //No trailing slash
+define('BACKUP_ROOT_FOLDER', ROOT_DATA_FOLDER . DIRECTORY_SEPARATOR . 'backups'); //No trailing slash
 define('BACKUP_DATE_FORMAT', 'Y-m-d_H-i-s'); //Modified `DateTime::ATOM`
 define('BACKUP_PASSWORD', 'default'); //Leave empty to disable.
 define('BACKUP_ENCRYPTION_METHOD', ZipArchive::EM_AES_256); //https://www.php.net/manual/en/zip.constants.php#:~:text=against%20libzip%20%E2%89%A5%201.11.1.-,Encryption%20modes,PECL%20zip%201.19.0%2C%20respectively.,-Length%20parameter%20constants
@@ -37,6 +37,6 @@ define('DATABASE_CONNECTIONS', [
 	'php-db-backup' => new DBConnectionConfig(
 		nameID: 'php_db_backup_connection',
 		type: DatabaseType::sqlite,
-		hostPath: ROOT_DATA_FOLDER . 'db_backup.sqlite',
+		hostPath: ROOT_DATA_FOLDER . DIRECTORY_SEPARATOR . 'db_backup.sqlite',
 	)
 ]);

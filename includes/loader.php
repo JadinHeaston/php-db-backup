@@ -18,5 +18,5 @@ if (((isset($GLOBALS['disable_auth']) && $GLOBALS['disable_auth'] !== true) && a
 if (checkForFolder(BACKUP_ROOT_FOLDER) === false)
 	exit(1);
 
-$GLOBALS['DB'] = new DBConnector('sqlite', ROOT_DATA_FOLDER . 'db_backup.sqlite');
+$GLOBALS['DB'] = new DBConnector('sqlite', ROOT_DATA_FOLDER . DIRECTORY_SEPARATOR . 'db_backup.sqlite');
 $GLOBALS['DB']->init();
