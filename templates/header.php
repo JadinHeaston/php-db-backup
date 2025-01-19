@@ -5,8 +5,11 @@ if (isHTMX() === true)
 $versionedFiles = versionedFiles(
 	[
 		__DIR__ . '/../css/styles.css',
+		__DIR__ . '/../vendor/select2/select2.min.css',
 		__DIR__ . '/../js/scripts.js',
 		__DIR__ . '/../vendor/htmx/htmx.min.js',
+		__DIR__ . '/../vendor/jquery/jquery.slim.min.js',
+		__DIR__ . '/../vendor/select2/select2.min.js',
 	]
 );
 
@@ -21,8 +24,11 @@ echo <<<HTML
 		<link rel="icon" type="image/svg+xml" href="{$GLOBALS['constants']['APP_ROOT']}assets/favicon.svg">
 		<link rel="preload" as="style" href="{$GLOBALS['constants']['APP_ROOT']}css/styles.css?v={$versionedFiles[__DIR__ . '/../css/styles.css']['version']}" integrity="{$versionedFiles[__DIR__ . '/../css/styles.css']['integrity']}">
 		<link rel="stylesheet" href="{$GLOBALS['constants']['APP_ROOT']}css/styles.css?v={$versionedFiles[__DIR__ . '/../css/styles.css']['version']}" integrity="{$versionedFiles[__DIR__ . '/../css/styles.css']['integrity']}">
+		<link rel="stylesheet" href="{$GLOBALS['constants']['APP_ROOT']}vendor/select2/select2.min.css?v={$versionedFiles[__DIR__ . '/../vendor/select2/select2.min.css']['version']}" integrity="{$versionedFiles[__DIR__ . '/../vendor/select2/select2.min.css']['integrity']}">
 		<script src="{$GLOBALS['constants']['APP_ROOT']}js/scripts.js?v={$versionedFiles[__DIR__ . '/../js/scripts.js']['version']}" type="module" integrity="{$versionedFiles[__DIR__ . '/../js/scripts.js']['integrity']}"></script>
 		<script src="{$GLOBALS['constants']['APP_ROOT']}vendor/htmx/htmx.min.js?v={$versionedFiles[__DIR__ . '/../vendor/htmx/htmx.min.js']['version']}" integrity="{$versionedFiles[__DIR__ . '/../vendor/htmx/htmx.min.js']['integrity']}"></script>
+		<script src="{$GLOBALS['constants']['APP_ROOT']}vendor/jquery/jquery.slim.min.js?v={$versionedFiles[__DIR__ . '/../vendor/jquery/jquery.slim.min.js']['version']}" integrity="{$versionedFiles[__DIR__ . '/../vendor/jquery/jquery.slim.min.js']['integrity']}"></script>
+		<script src="{$GLOBALS['constants']['APP_ROOT']}vendor/select2/select2.min.js?v={$versionedFiles[__DIR__ . '/../vendor/select2/select2.min.js']['version']}" integrity="{$versionedFiles[__DIR__ . '/../vendor/select2/select2.min.js']['integrity']}"></script>
 	</head>
 
 	<body hx-target="main" hx-select="main" hx-swap="outerHTML" hx-push-url="true">

@@ -1,6 +1,7 @@
 :root {
 	color-scheme: light dark;
 	--font-color: light-dark(black, white);
+	--opposite-font-color: light-dark(white, black);
 	--link-color: light-dark(#0000ee, #8c8cff);
 	--first-background-color: light-dark(white, black);
 	--second-background-color: light-dark(#e1e1e1, #1e1e1e);
@@ -62,6 +63,14 @@ label.required::after {
 
 button {
 	cursor: pointer;
+}
+
+/* Select2 Styles */
+.select2-container .select2-search--inline .select2-search__field,
+.select2-selection__choice__remove,
+.select2-selection__choice__display,
+.select2-results__option--selectable {
+	color: var(--opposite-font-color) !important;
 }
 
 table,
@@ -141,6 +150,6 @@ form .input-group:last-child {
 	justify-content: center;
 }
 
-form .input-group:last-child > * {
+form .input-group:last-child>* {
 	margin: 1rem;
 }

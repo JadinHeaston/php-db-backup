@@ -6,9 +6,15 @@ class DatabaseConnector
 	protected string $type;
 
 	private $queries = array(
+		'listDatabases' => array(
+			'mariadb' => 'SHOW DATABASES',
+			'mysql' => 'SHOW DATABASES',
+			'sqlite' => false,
+			'sqlsrv' => 'SELECT name, database_id, create_date FROM sys.databases'
+		),
 		'listTables' => array(
-			'mariadb' => 'SHOW FULL tables',
-			'mysql' => 'SHOW FULL tables',
+			'mariadb' => 'SHOW FULL TABLES',
+			'mysql' => 'SHOW FULL TABLES',
 			'sqlite' => 'SELECT * FROM sqlite_schema WHERE type =\'table\' AND name NOT LIKE \'sqlite_%\'',
 			'sqlsrv' => 'SELECT DISTINCT TABLE_NAME FROM information_schema.tables'
 		),
@@ -143,16 +149,53 @@ class DatabaseConnector
 		return $this->connection->lastInsertId();
 	}
 
-	public function listTables($includeViews = true)
+	public function listTables(string $databaseName = '', $includeViews = true)
 	{
 		$query = $this->queries[__FUNCTION__][$this->type];
 		if ($query === false)
 			return false;
 
-		if ($includeViews === false && $this->type === 'mysql')
+
+		if ($databaseName !== '')
+		{
+			if ($this->type === 'mysql' || $this->type === 'mariadb')
+				$query = $query . ' FROM ' . $databaseName;
+			// elseif ($this->type === 'sqlsrv')
+			// 	$query = 'USE ' . $databaseName . '; ' . $query;
+		}
+		if ($includeViews === false && ($this->type === 'mysql' || $this->type === 'mariadb'))
 			$query .= ' WHERE Table_Type = \'BASE TABLE\'';
 		elseif ($includeViews === false && $this->type === 'sqlsrv')
 			$query .= ' WHERE TABLE_TYPE = \'BASE TABLE\'';
+
+
+		try
+		{
+			$results = $this->select($query);
+			if ($results === false)
+				return false;
+			$tables = [];
+			foreach ($results as $row)
+			{
+				if ($this->type === 'mysql' || $this->type === 'mariadb')
+					$tables[] = current($row);
+				elseif ($this->type === 'sqlite')
+					$tables[] = $row['tbl_name'];
+			}
+			return $tables;
+		}
+		catch (\Exception $e)
+		{
+			throw new \Exception($e->getMessage());
+		}
+		return false;
+	}
+
+	public function listDatabases()
+	{
+		$query = $this->queries[__FUNCTION__][$this->type];
+		if ($query === false)
+			return false;
 
 		try
 		{
@@ -394,8 +437,39 @@ class DBDatabase
 				$this->maxBackupCount
 			]
 		);
+	}
+
+	public function deleteExcludedTables(): \PDOStatement|int|false
+	{
+		return $GLOBALS['DB']->executeStatement(
+			'DELETE FROM
+				excluded_tables
+			WHERE
+				database_id = ?',
+			[$this->id]
+		);
+	}
+
+	public function insertExcludedTables(): \PDOStatement|int|false
+	{
+		foreach ($this->excludedTables as $excludedTable)
+		{
+			$GLOBALS['DB']->executeStatement(
+				'INSERT INTO
+					excluded_tables (database_id, table_name)
+				VALUES
+					(?, ?);',
+				[
+					$this->id,
+					$excludedTable,
+				]
+			);
+		}
+
 		return true;
 	}
+
+
 
 	public function __construct(array $row = [])
 	{
@@ -683,12 +757,12 @@ class DBConnectionConfig
 	 *
 	 * @return DBConnectionConfig
 	 */
-	public static function getConfig(string $nameID): DBConnectionConfig | null
+	public static function getConfig(string $nameID): DBConnectionConfig | false
 	{
-		return array_find(DATABASE_CONNECTIONS, function ($database) use ($nameID)
+		return array_find(DATABASE_CONNECTIONS, function (DBConnectionConfig $database) use ($nameID)
 		{
 			if ($database->nameID === $nameID)
-				return true;
+				return $database;
 			else
 				return false;
 		});

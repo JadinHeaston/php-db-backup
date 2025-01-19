@@ -1,15 +1,57 @@
 <?php
 require_once(__DIR__ . '/../includes/loader.php');
 
+define('DATABASE_TABLE_DELIMITER', '-|-');
+
 //Submitting
 if (isset($_POST['submit']))
 {
-	$database = DBDatabase::importInputs($_POST);
+	$excludedTables = [];
 
-	if ($database->insertUpdateDatabase() === false)
-		exit('Failed to write to database. (' .  $database->id .  ')');
+	if (isset($_POST['excluded_tables']) === true)
+	{
+		foreach ($_POST['excluded_tables'] as $excludedTableData)
+		{
+			$data = explode(DATABASE_TABLE_DELIMITER, $excludedTableData);
+			$excludedTables[$data[0]][] = $data[1];
+		}
+	}
 
-	header('Location: ?id=' . $GLOBALS['DB']->getLastInsertID());
+	$databaseTemplate = DBDatabase::importInputs($_POST);
+	var_dump($_POST);
+	foreach ($_POST['databases'] as $databaseName)
+	{
+		$database = clone $databaseTemplate;
+		$database->name = $databaseName;
+		if (isset($excludedTables[$database->name]) === true)
+		{
+			foreach ($excludedTables[$database->name] as $excludedTable)
+			{
+				$database->excludedTables[] = $excludedTable;
+			}
+		}
+
+		if ($database->insertUpdateDatabase() === false)
+			exit('Failed to write to database. (' .  $database->name .  ')');
+
+		$insertID = $GLOBALS['DB']->getLastInsertID();
+
+		if ($insertID === false)
+			exit('Failed to get insert ID. (' .  $database->name .  ')');
+		else
+			$database->id = $insertID;
+
+		if ($database->deleteExcludedTables() === false)
+			exit('Failed to clear previous excluded tables. (' .  $database->name .  ')');
+
+		if ($database->insertExcludedTables() === false)
+			exit('Failed to insert excluded tables. (' .  $database->name .  ')');
+	}
+	if (isset($_POST['id']) && intval($_POST['id']) !== 0)
+		header('Location: ?id=' . intval($_POST['id']));
+	else
+		header('Location: index.php');
+	exit(0);
 }
 elseif (isset($_POST['delete'])) //Deleting
 {
@@ -26,9 +68,8 @@ elseif (isset($_POST['delete'])) //Deleting
 		exit('Failed to delete database backups. (' .  $database->uuid .  ')');
 
 	header('Location: index.php');
+	exit(0);
 }
-
-require_once(__DIR__ . '/../templates/header.php');
 
 //Editing. Get values.
 if (isset($_GET['id']) && intval($_GET['id']) !== 0)
@@ -38,6 +79,157 @@ else //New database being configured.
 
 if ($database === false)
 	exit('Failed to get database. (' . intval($_GET['id']) . ')');
+
+if (isset($_GET['connection']) === true && isset($_GET['get-databases']) === true)
+{
+	$connectionConfig = DBConnectionConfig::getConfig($_GET['connection']);
+	if ($connectionConfig === false)
+	{
+		echo <<<HTML
+			<option selected disabled>Failed to get databases...</option>
+			HTML;
+		exit(1);
+	}
+
+	if ($connectionConfig->type === DatabaseType::mariadb)
+	{
+		$connection = $connectionConfig->getConnection();
+		$databases = $connection->listDatabases();
+		if ($databases === false)
+		{
+			echo <<<HTML
+				<option value="" selected disabled>No databases found. You are able to enter databases here though!</option>
+				HTML;
+		}
+
+		foreach ($databases as $databaseRow)
+		{
+			echo <<<HTML
+				<option value="{$databaseRow['Database']}">{$databaseRow['Database']}</option>
+				HTML;
+		}
+	}
+	elseif ($connectionConfig->type === DatabaseType::sqlite)
+	{
+		//Script triggers tables to be fetched. Unclear why this must be done, but the mariadb version doesn't need it...
+		echo <<<HTML
+			<option value="{$connectionConfig->nameID}" selected disabled>SQLite file found!</option>
+			<option disabled>
+				Anything else entered here will be disregarded. :)
+				<script>
+					htmx.trigger('#databases', 'changed');
+				</script>
+			</option>
+			HTML;
+	}
+	else
+	{
+		echo <<<HTML
+			<option value="" selected disabled>No databases to get for Database Type ({$connectionConfig->type->displayName()})...</option>
+			HTML;
+	}
+
+	exit(0);
+}
+elseif (isset($_GET['connection']) === true && isset($_GET['get-tables']) === true)
+{
+	//No databases provided. Therefore, no tables can be provided.
+	if (isset($_GET['databases']) === false)
+	{
+		echo '';
+		exit(0);
+	}
+
+	$connectionConfig = DBConnectionConfig::getConfig($_GET['connection']);
+	if ($connectionConfig === false)
+	{
+		echo <<<HTML
+			<option selected disabled>Failed to get tables...</option>
+			HTML;
+		exit(1);
+	}
+
+	if ($connectionConfig->type === DatabaseType::mariadb)
+	{
+		$connection = $connectionConfig->getConnection();
+		$tables = [];
+		$databases = array_unique($_GET['databases']);
+		foreach ($databases as $databaseName)
+		{
+			$tables[$databaseName] = $connection->listTables(
+				databaseName: $databaseName,
+				includeViews: false
+			);
+		}
+
+		//Getting excluded tables
+		if (isset($_GET['id']) && intval($_GET['id']) !== 0)
+		{
+			$database = DBDatabase::lookupDatabaseID(intval($_GET['id']));
+			if ($database === false)
+				exit('Failed to get database. (' . intval($_GET['id']) . ')');
+			$excludedTables = DBDatabase::lookupExcludedTables($database->id);
+		}
+		else
+			$excludedTables = [];
+
+		if ($tables === false)
+		{
+			foreach ($excludedTables as $excludedTable)
+			{
+				echo <<<HTML
+					<option value="{$databaseName}-|-{$table}" selected>{$table}</option>
+					HTML;
+			}
+			echo <<<HTML
+				<option value="" selected disabled>No tables found. You are able to enter tables here though!</option>
+				HTML;
+		}
+
+		foreach ($tables as $databaseName => $databaseTables)
+		{
+			foreach ($databaseTables as $table)
+			{
+				if (in_array($table, $excludedTables, true))
+					$selected = 'selected';
+				else
+					$selected = '';
+				echo <<<HTML
+					<option value="{$databaseName}-|-{$table}" {$selected}>{$table} ({$databaseName})</option>
+					HTML;
+			}
+		}
+	}
+	elseif ($connectionConfig->type === DatabaseType::sqlite)
+	{
+		$connection = $connectionConfig->getConnection();
+		$tables = $connection->listTables(includeViews: false);
+
+		if ($tables === false)
+		{
+			echo <<<HTML
+				<option value="" selected disabled>No tables found. You are able to enter tables here though!</option>
+				HTML;
+		}
+
+		foreach ($tables as $table)
+		{
+			echo <<<HTML
+				<option value="{$table}">{$table}</option>
+				HTML;
+		}
+	}
+	else
+	{
+		echo <<<HTML
+			<option value="" selected disabled>No databases to get for Database Type ({$connectionConfig->type->displayName()})...</option>
+			HTML;
+	}
+
+	exit(0);
+}
+
+require_once(__DIR__ . '/../templates/header.php');
 
 //Default values.
 if (isset($database->id))
@@ -49,6 +241,7 @@ if (isset($database->uuid))
 else
 	$databaseUUID = '';
 
+
 $connectionOptions = '';
 foreach (DATABASE_CONNECTIONS as $connectionName => $connection)
 {
@@ -57,17 +250,20 @@ foreach (DATABASE_CONNECTIONS as $connectionName => $connection)
 	else
 		$selectedText = '';
 	$connectionOptions .= <<<HTML
-		<option value="{$connection->nameID}" {$selectedText}>{$connectionName}</option>
+		<option value="{$connection->nameID}" {$selectedText}>{$connectionName} ({$connection->type->displayName()})</option>
 		HTML;
 }
 
 $activeChecked = ($database->active === true ? 'checked' : '');
 $visibleChecked = ($database->visible === true ? 'checked' : '');
+
 $databaseAction = (isset($_GET['id']) ? 'Edit' : 'New');
+$editMode = isset($_GET['id']);
+$deleteButton = ($databaseAction === 'Edit' ? '<button type="submit" name="delete" value="">Delete</button>' : '');
 echo <<<HTML
 	<main>
 		<h2>Administration</h2>
-		<h3>{$databaseAction} Database</h3>
+		<h3>{$databaseAction} Database(s)</h3>
 		<form method="post">
 			<input type="hidden" name="id" id="id" value="{$databaseID}" required />
 			<input type="hidden" name="uuid" id="uuid" value="{$databaseUUID}" required />
@@ -80,18 +276,51 @@ echo <<<HTML
 				<label for="display-uuid">UUID: </label>
 				<input type="text" id="display-uuid" value="{$databaseUUID}" placeholder="{auto-generated}" disabled />
 			</div>
-
-			<div class="input-group" title="This should be EXACTLY the same as the database name itself.">
-				<label for="name">Database Name: </label>
-				<input type="text" name="name" id="name" value="{$database->name}" placeholder="Name"  minlength="1" required />
-			</div>
+	HTML;
+if ($editMode === false)
+{
+	echo <<<HTML
 			<div class="input-group">
 				<label for="connection">Connection: </label>
-				<select class="select2" type="text" name="connection" id="connection" placeholder="Connection" required>
+				<select class="select2" name="connection" id="connection" data-placeholder="Select a connection..." hx-trigger="change throttle:0.5s, changed throttle:0.5s" hx-push-url="false" hx-get="?get-databases" hx-target="#databases" hx-select="option" hx-swap="innerHTML" required>
 					<option selected disabled>Select a connection...</option>
 					{$connectionOptions}
 				</select>
 			</div>
+			<div class="input-group" title="This should be EXACTLY the same as the database name(s).">
+				<label for="databases[]">Database(s): </label>
+				<select class="select2" name="databases[]" id="databases" placeholder="Database Name(s)..." multiple="true" data-allow-clear="true" data-tags="true" hx-trigger="change throttle:0.5s, changed throttle:0.5s" hx-push-url="false" hx-get="?get-tables" hx-include="#connection" hx-target="#excluded_tables" hx-select="option" hx-swap="innerHTML" required>
+				</select>
+			</div>
+			<div class="input-group" title="This should be EXACTLY the same as the table name(s).">
+				<label for="excluded_tables[]">Excluded Table(s): </label>
+				<select class="select2" name="excluded_tables[]" id="excluded_tables" placeholder="Table Name(s)..."  multiple="true" data-allow-clear="true" data-tags="true">
+				</select>
+			</div>
+	HTML;
+}
+elseif ($editMode === true)
+{
+	echo <<<HTML
+		<input type="hidden" name="connection" id="connection" value="{$database->connection->nameID}" required />
+		<input type="hidden" name="databases[]" id="databases[]" value="{$database->name}" required />
+		<div class="input-group">
+			<label for="display-connection">Connection: </label>
+			<input name="display-connection" id="display-connection" value="{$database->connection->nameID}" disabled>
+		</div>
+		<div class="input-group" title="This should be EXACTLY the same as the database name(s).">
+			<label for="display-databases[]">Database: </label>
+			<input name="display-databases" id="display-databases" value="{$database->name}" disabled>
+		</div>
+		<div class="input-group" title="This should be EXACTLY the same as the table name(s).">
+			<label for="excluded_tables[]">Excluded Table(s): </label>
+			<select class="select2" name="excluded_tables[]" id="excluded_tables" placeholder="Table Name(s)..."  multiple="true" data-allow-clear="true" data-tags="true" hx-trigger="load" hx-push-url="false" hx-get="?get-tables&id={$databaseID}&connection={$database->connection->nameID}" hx-vals='{"databases[]": ["{$database->name}"]}' hx-target="#excluded_tables" hx-select="option" hx-swap="innerHTML">
+			</select>
+		</div>
+		HTML;
+}
+
+echo <<<HTML
 			<div class="input-group">
 				<label for="active" title="Controls whether the database is being backed up.">Active: </label>
 				<input type="checkbox" name="active" id="active" value="{$database->active}" {$activeChecked} />
@@ -100,14 +329,16 @@ echo <<<HTML
 				<label for="visible" title="Controls whether the database is visible in the UI. Backups will continue to run, assuming the database is active.">Visible: </label>
 				<input type="checkbox" name="visible" id="visible" value="{$database->visible}" {$visibleChecked} />
 			</div>
+
 			<div class="input-group">
 				<label for="max_backup_count" title="Sets how many backups are retained. Set to '0' to keep all backups indefinitely.">Max Backup Count: </label>
 				<input type="number" name="max_backup_count" id="max_backup_count" value="{$database->maxBackupCount}" placeholder="Max Backup Count" required />
 			</div>
+
 			<div class="input-group">
 				<button type="submit" name="submit" value="">Submit</button>
 				<button type="reset">Reset</button>
-				<button type="submit" name="delete" value="">Delete</button>
+				{$deleteButton}
 			</div>
 		</form>
 	</main>
