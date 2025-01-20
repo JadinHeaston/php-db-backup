@@ -17,7 +17,7 @@ if (isset($_POST['submit']))
 		}
 	}
 
-	$databaseTemplate = DBDatabase::importInputs($_POST);f
+	$databaseTemplate = DBDatabase::importInputs($_POST);
 	foreach ($_POST['databases'] as $databaseName)
 	{
 		$database = clone $databaseTemplate;
