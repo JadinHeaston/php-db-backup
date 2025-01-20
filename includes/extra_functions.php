@@ -92,7 +92,7 @@ function cachedFunction(callable $function, mixed ...$params): mixed
 	return $GLOBALS['cached_function'][$function][implode('', $params)];
 }
 
-function readCSVFile(string $filePath, int $length = null, string $separator = ',', string $enclosure = '"', string $escape = '\\'): \Generator | false
+function readCSVFile(string $filePath, ?int $length = null, string $separator = ',', string $enclosure = '"', string $escape = '\\'): \Generator | false
 {
 	$header = null;
 	$file = fopen($filePath, 'r');
