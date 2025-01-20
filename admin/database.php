@@ -79,9 +79,9 @@ else //New database being configured.
 if ($database === false)
 	exit('Failed to get database. (' . intval($_GET['id']) . ')');
 
-if (isset($_GET['connection']) === true && isset($_GET['get-databases']) === true)
+if (isset($_GET['get-databases']) === true && isset($_POST['connection']) === true)
 {
-	$connectionConfig = DBConnectionConfig::getConfig($_GET['connection']);
+	$connectionConfig = DBConnectionConfig::getConfig($_POST['connection']);
 	if ($connectionConfig === false)
 	{
 		echo <<<HTML
@@ -130,16 +130,16 @@ if (isset($_GET['connection']) === true && isset($_GET['get-databases']) === tru
 
 	exit(0);
 }
-elseif (isset($_GET['connection']) === true && isset($_GET['get-tables']) === true)
+elseif (isset($_GET['get-tables']) === true && isset($_POST['connection']) === true)
 {
 	//No databases provided. Therefore, no tables can be provided.
-	if (isset($_GET['databases']) === false)
+	if (isset($_POST['databases']) === false)
 	{
 		echo '';
 		exit(0);
 	}
 
-	$connectionConfig = DBConnectionConfig::getConfig($_GET['connection']);
+	$connectionConfig = DBConnectionConfig::getConfig($_POST['connection']);
 	if ($connectionConfig === false)
 	{
 		echo <<<HTML
@@ -152,7 +152,7 @@ elseif (isset($_GET['connection']) === true && isset($_GET['get-tables']) === tr
 	{
 		$connection = $connectionConfig->getConnection();
 		$tables = [];
-		$databases = array_unique($_GET['databases']);
+		$databases = array_unique($_POST['databases']);
 		foreach ($databases as $databaseName)
 		{
 			$tables[$databaseName] = $connection->listTables(
@@ -281,14 +281,14 @@ if ($editMode === false)
 	echo <<<HTML
 			<div class="input-group">
 				<label for="connection">Connection: </label>
-				<select class="select2" name="connection" id="connection" data-placeholder="Select a connection..." hx-trigger="change throttle:0.5s, changed throttle:0.5s" hx-push-url="false" hx-get="?get-databases" hx-target="#databases" hx-select="option" hx-swap="innerHTML" required>
+				<select class="select2" name="connection" id="connection" data-placeholder="Select a connection..." hx-trigger="change throttle:0.5s, changed throttle:0.5s" hx-push-url="false" hx-post="?get-databases" hx-target="#databases" hx-select="option" hx-swap="innerHTML" required>
 					<option selected disabled>Select a connection...</option>
 					{$connectionOptions}
 				</select>
 			</div>
 			<div class="input-group" title="This should be EXACTLY the same as the database name(s).">
 				<label for="databases[]">Database(s): </label>
-				<select class="select2" name="databases[]" id="databases" placeholder="Database Name(s)..." multiple="true" data-allow-clear="true" data-tags="true" hx-trigger="change throttle:0.5s, changed throttle:0.5s" hx-push-url="false" hx-get="?get-tables" hx-include="#connection" hx-target="#excluded_tables" hx-select="option" hx-swap="innerHTML" required>
+				<select class="select2" name="databases[]" id="databases" placeholder="Database Name(s)..." multiple="true" data-allow-clear="true" data-tags="true" hx-trigger="change throttle:0.5s, changed throttle:0.5s" hx-push-url="false" hx-post="?get-tables" hx-include="#connection" hx-target="#excluded_tables" hx-select="option" hx-swap="innerHTML" required>
 				</select>
 			</div>
 			<div class="input-group" title="This should be EXACTLY the same as the table name(s).">
@@ -313,7 +313,7 @@ elseif ($editMode === true)
 		</div>
 		<div class="input-group" title="This should be EXACTLY the same as the table name(s).">
 			<label for="excluded_tables[]">Excluded Table(s): </label>
-			<select class="select2" name="excluded_tables[]" id="excluded_tables" placeholder="Table Name(s)..."  multiple="true" data-allow-clear="true" data-tags="true" hx-trigger="load" hx-push-url="false" hx-get="?get-tables&id={$databaseID}&connection={$database->connection->nameID}" hx-vals='{"databases[]": ["{$database->name}"]}' hx-target="#excluded_tables" hx-select="option" hx-swap="innerHTML">
+			<select class="select2" name="excluded_tables[]" id="excluded_tables" placeholder="Table Name(s)..."  multiple="true" data-allow-clear="true" data-tags="true" hx-trigger="load" hx-push-url="false" hx-post="?get-tables&id={$databaseID}&connection={$database->connection->nameID}" hx-vals='{"databases[]": ["{$database->name}"]}' hx-target="#excluded_tables" hx-select="option" hx-swap="innerHTML">
 			</select>
 		</div>
 		HTML;
