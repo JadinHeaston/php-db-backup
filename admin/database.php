@@ -162,6 +162,7 @@ elseif (isset($_GET['get-tables']) === true && isset($_POST['connection']) === t
 		}
 
 		//Getting excluded tables
+		$excludedTables = [];
 		if (isset($_GET['id']) && intval($_GET['id']) !== 0)
 		{
 			$database = DBDatabase::lookupDatabaseID(intval($_GET['id']));
@@ -169,8 +170,8 @@ elseif (isset($_GET['get-tables']) === true && isset($_POST['connection']) === t
 				exit('Failed to get database. (' . intval($_GET['id']) . ')');
 			$excludedTables = DBDatabase::lookupExcludedTables($database->id);
 		}
-		else
-			$excludedTables = [];
+		elseif (isset($_POST['excluded_tables']) === true)
+			$excludedTables = $_POST['excluded_tables'];
 
 		if ($tables === false)
 		{
@@ -189,7 +190,7 @@ elseif (isset($_GET['get-tables']) === true && isset($_POST['connection']) === t
 		{
 			foreach ($databaseTables as $table)
 			{
-				if (in_array($table, $excludedTables, true))
+				if (in_array($table, $excludedTables, true) || in_array($databaseName . DATABASE_TABLE_DELIMITER . $table, $excludedTables, true))
 					$selected = 'selected';
 				else
 					$selected = '';
